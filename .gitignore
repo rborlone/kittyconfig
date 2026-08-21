@@ -1,0 +1,11 @@
+# Editor swap/backup files
+*~
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local overrides not meant to be shared/versioned
+kitty.conf.local
