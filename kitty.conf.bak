@@ -5,6 +5,9 @@ map kitty_mod+t new_tab_with_cwd
 
 
 # BEGIN_KITTY_THEME
-# Nova
+# Adapta Nokto Maia
 include current-theme.conf
 # END_KITTY_THEME
+# BEGIN_KITTY_FONT
+include current-font.conf
+# BEGIN_KITTY_FONT
