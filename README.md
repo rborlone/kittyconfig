@@ -4,17 +4,70 @@ Configuración de [Kitty](https://sw.kovidgoyal.net/kitty/) para este equipo. Es
 
 ## Archivos
 
-- `kitty.conf` — configuración principal. Kitty la recarga sola al guardar (no hace falta reiniciar la terminal).
+- `kitty.conf` — configuración principal. Recargar con `ctrl+shift+f5`; algunos ajustes (`env`, barra de tabs) solo se aplican al reiniciar kitty (`cmd+q`).
+- `custom.conf` — **session file** de la sesión "Ops" (ver abajo). No es config: define tabs y ventanas a abrir.
 - `current-theme.conf` — paleta de colores del tema activo, generada por el kitten de temas (ver abajo). No editar a mano; se regenera cada vez que se cambia de tema.
+- `current-font.conf` — tamaño de fuente (`font_size 15.0`).
 
 ## Estado actual de este `kitty.conf`
 
 | Línea | Qué hace |
 |---|---|
 | `map kitty_mod+t new_tab_with_cwd` | La tab nueva (`ctrl+shift+t`) abre en el directorio de la pestaña activa, en vez del default de Kitty (siempre home). |
-| `background_opacity 0.90` | Fondo levemente transparente (90% opaco). |
-| `dynamic_background_opacity yes` | Permite subir/bajar la opacidad en caliente sin editar el archivo (ver atajos abajo). |
-| Bloque `BEGIN_KITTY_THEME` / `END_KITTY_THEME` | Tema de colores activo, aplicado con el kitten `themes` (actualmente "Oceanic Material"). No tocar a mano — se reescribe solo al cambiar de tema. |
+| `env PATH=${HOME}/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}` | Abierto desde el Dock, kitty no lee `.zshrc` y hereda un PATH mínimo. Sin esto, los programas que lanza la sesión no encuentran Homebrew (`k8s-htop` falla con `kubectl not found in PATH`). |
+| `map kitty_mod+o goto_session ~/.config/kitty/custom.conf` | `ctrl+shift+o` abre la sesión "Ops"; si ya está abierta, salta a ella. Reemplaza el default `pass_selection_to_program`. |
+| `# background_opacity` / `# dynamic_background_opacity` | Transparencia, hoy comentada (fondo opaco). |
+| Bloque `BEGIN_KITTY_THEME` / `END_KITTY_THEME` | Tema de colores activo, aplicado con el kitten `themes` (actualmente "Selenized Dark"). No tocar a mano — se reescribe solo al cambiar de tema. |
+| `enabled_layouts grid,tall:bias=50;full_size=2, *` | Layout por defecto `grid`; `ctrl+shift+l` rota entre los demás. |
+| `tab_bar_edge bottom` / `tab_bar_style powerline` | Barra de tabs abajo, con estilo de flechas. Se ve solo con 2+ tabs (`tab_bar_min_tabs` default). |
+
+## Sesión "Ops" (`custom.conf`)
+
+Dashboard de monitoreo en un solo tab, layout `splits`:
+
+```
+┌──────────────┬──────────────┐
+│              │ finops (55%) │
+│              ├──────────────┤
+│ shell        │ htop   (23%) │
+│              ├──────────────┤
+│              │ k8s-htop(22%)│
+└──────────────┴──────────────┘
+```
+
+Abrir:
+
+```bash
+ctrl+shift+o                                   # desde cualquier ventana de kitty
+kitty --session ~/.config/kitty/custom.conf    # desde cualquier terminal
+```
+
+| Panel | Programa | Notas |
+|---|---|---|
+| shell | zsh | Queda con el foco al abrir. |
+| finops | `~/.local/bin/finops` → `~/Proyectos/finops-console` | Dashboard de costos Azure. Mínimo **76x20**; usa datos cacheados (agregar `--live` para bajar de Azure, requiere `az`). |
+| htop | `/opt/homebrew/bin/htop` | Sin tamaño mínimo. |
+| k8s-htop | `~/Proyectos/k8s-htop/k8s-htop` | Contexto actual de kubectl. Mínimo 50x8. Requiere `kubectl` en el PATH. |
+
+Detalles del archivo:
+
+- **Rutas absolutas** en los `launch`, para no depender del PATH (`k8s-htop` no está en `~/.local/bin`).
+- **`--hold`** en los monitores: al salir con `q` queda un prompt de shell en vez de cerrarse el panel.
+- **Alturas dispares con `--bias`** (el % del panel partido que se lleva el nuevo), porque finops necesita 20 filas y en tercios le tocaban ~14. Si la ventana de kitty es más baja, finops puede mostrar `Terminal muy chica`: agrandar la ventana o arrastrar el borde.
+- **`--var pane=...` + `--next-to`** para elegir qué panel se parte, sin depender de cuál está activo.
+- Si se edita `custom.conf` con la sesión abierta, cerrarla antes de volver a `ctrl+shift+o`, si no salta a la vieja.
+
+Validar el archivo sin abrir la sesión (usa el parser de kitty):
+
+```bash
+cd ~/.config/kitty && kitty +runpy "
+from kitty.session import parse_session
+from kitty.config import load_config
+for s in parse_session(open('custom.conf').read(), load_config('kitty.conf')):
+    for w in s.tabs[0].windows:
+        o = vars(w.launch_spec.opts); print(o['window_title'], o['location'], o['bias'], o['next_to'])
+"
+```
 
 ## Categorías de configuración disponibles
 
@@ -109,5 +162,5 @@ kitty +kitten themes          # selector de temas interactivo
 
 ## Notas
 
-- Los cambios en `kitty.conf` se recargan solos al guardar (no hace falta `ctrl+shift+f5` salvo casos raros).
+- Kitty no recarga `kitty.conf` al guardar: usar `ctrl+shift+f5`, y para `env` o la barra de tabs, reiniciar con `cmd+q`.
 - Este directorio está versionado con git — antes de probar algo experimental, conviene commitear el estado que funciona.
