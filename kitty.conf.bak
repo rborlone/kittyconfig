@@ -1,13 +1,27 @@
 map kitty_mod+t new_tab_with_cwd
 
+# Abierto desde el Dock, kitty no lee .zshrc y hereda un PATH mínimo: los programas que
+# lanza una sesión (k8s-htop -> kubectl, finops -> az) no encuentran Homebrew.
+env PATH=${HOME}/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}
+# Sesión Ops (shell + htop, k8s-htop, finops). Si ya está abierta, salta a ella.
+map kitty_mod+o goto_session ~/.config/kitty/custom.conf
+
 # background_opacity 0.90
 # dynamic_background_opacity yes
 
 
 # BEGIN_KITTY_THEME
-# Adapta Nokto Maia
+# Selenized Dark
 include current-theme.conf
 # END_KITTY_THEME
 # BEGIN_KITTY_FONT
 include current-font.conf
 # BEGIN_KITTY_FONT
+
+enabled_layouts         grid,tall:bias=50;full_size=2, *
+
+# Tab layout {{{
+tab_bar_edge   bottom
+tab_bar_style  powerline
+
+# }}}
